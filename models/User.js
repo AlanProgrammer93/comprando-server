@@ -16,6 +16,7 @@ const userSchema = new Schema({
     },
     password: { type: String, required: true, select: false },
     profilePicUrl: { type: String },
+    profileBannerUrl: { type: String },
     newMessagePopup: { type: Boolean, default: true },
     unreadMessage: { type: Boolean, default: false },
     role: {

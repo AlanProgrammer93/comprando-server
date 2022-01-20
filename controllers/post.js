@@ -31,7 +31,6 @@ exports.removeImage = async (req, res) => {
 // UPLOAD IMAGES CLOUDINARY END
 
 exports.postPublication = async (req, res) => {
-    console.log(req.body);
     // Validar datos
     try {
         req.body.user = req.userId
@@ -72,6 +71,36 @@ exports.getPublications = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error en el servidor');
+    }
+}
+
+exports.getUserAndPublications = async (req, res) => {
+    try {
+        const user = await User.findById(req.body.id).exec()
+        const posts = await Post.find({user: req.body.id})
+            .select('images description price updatedAt')
+            .exec()
+        
+        let dataResponse = null
+        if (user) {
+            dataResponse = {
+                id: user._id,
+                username: user.username,
+                role: user.role,
+            }
+        } 
+        if (posts) {
+            dataResponse = {
+                ...dataResponse,
+                posts
+            }
+        }
+        
+        res.json(dataResponse)
+    } catch (error) {
+        return res.status(500).json({
+            msg: 'Ha ocurrido un error interno.'
+        });
     }
 }
 

@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/User')
+const Post = require('../models/Post')
+const Message = require('../models/Message');
 
 exports.register = async (req, res) => {
     const { username, email, password } = req.body;
@@ -34,9 +36,12 @@ exports.register = async (req, res) => {
 
     try {
         await user.save();
+        await new Message({ user: user._id, chats: [] }).save();
+        
         const payload = { userId: user._id };
 
         const dataResponse = {
+            id: user._id,
             username: user.username,
             role: user.role,
             unreadMessage: user.unreadMessage,
@@ -64,13 +69,18 @@ exports.currentUser = async (req, res) => {
     try {
         const userId = req.userId;
         const user = await User.findById(userId).exec()
+        const posts = await Post.find()
+            .limit(6)
+            .sort({ createdAt: -1 })
         
         if (user) {
             const dataResponse = {
+                id: user._id,
                 username: user.username,
                 role: user.role,
                 unreadMessage: user.unreadMessage,
-                newMessagePopup: user.newMessagePopup
+                newMessagePopup: user.newMessagePopup,
+                posts
             }
             jwt.sign({ userId }, process.env.JWT_SECRET,
                 { expiresIn: '2d' },
@@ -92,6 +102,9 @@ exports.currentUser = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     let user = await User.findOne({ email }).select('+password');
+    const posts = await Post.find()
+            .limit(6)
+            .sort({ createdAt: -1 })
 
     if (!email || !password) {
         return res.status(400).json({
@@ -110,10 +123,12 @@ exports.login = async (req, res) => {
             const payload = { userId: user._id };
 
             const dataResponse = {
+                id: user._id,
                 username: user.username,
                 role: user.role,
                 unreadMessage: user.unreadMessage,
-                newMessagePopup: user.newMessagePopup
+                newMessagePopup: user.newMessagePopup,
+                posts
             }
 
             jwt.sign(payload, process.env.JWT_SECRET,
